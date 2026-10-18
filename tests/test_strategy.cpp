@@ -61,19 +61,48 @@ void testSignalsAroundThresholds()
     SilenceCout quiet;
 
     m.addPrice("BTC", 58000.0);
-    CHECK(s.generateSignal(m, p) == Signal::BUY); // below buy threshold
+    CHECK(s.generateSignal(m, p).action == Action::BUY); // below buy threshold
 
     m.addPrice("BTC", 59000.0);
-    CHECK(s.generateSignal(m, p) == Signal::BUY); // exactly at buy threshold
+    CHECK(s.generateSignal(m, p).action == Action::BUY); // exactly at buy threshold
 
     m.addPrice("BTC", 60000.0);
-    CHECK(s.generateSignal(m, p) == Signal::HOLD); // in between
+    CHECK(s.generateSignal(m, p).action == Action::HOLD); // in between
 
     m.addPrice("BTC", 62000.0);
-    CHECK(s.generateSignal(m, p) == Signal::SELL); // exactly at sell threshold
+    CHECK(s.generateSignal(m, p).action == Action::SELL); // exactly at sell threshold
 
     m.addPrice("BTC", 70000.0);
-    CHECK(s.generateSignal(m, p) == Signal::SELL); // above sell threshold
+    CHECK(s.generateSignal(m, p).action == Action::SELL); // above sell threshold
+}
+
+void testSignalQuantity()
+{
+    MarketData m;
+    Portfolio p(100000.0);
+    SilenceCout quiet;
+
+    // default quantity is 1
+    BuyLowSellHigh defaultQty("BTC", 59000.0, 62000.0);
+    m.addPrice("BTC", 58000.0);
+    CHECK(defaultQty.generateSignal(m, p).quantity == 1);
+
+    // custom quantity is carried on BUY and SELL signals
+    BuyLowSellHigh five("BTC", 59000.0, 62000.0, 5);
+    CHECK(five.generateSignal(m, p).quantity == 5);
+    m.addPrice("BTC", 70000.0);
+    CHECK(five.generateSignal(m, p).quantity == 5);
+
+    // HOLD carries quantity 0
+    m.addPrice("BTC", 60000.0);
+    Signal hold = five.generateSignal(m, p);
+    CHECK(hold.action == Action::HOLD);
+    CHECK(hold.quantity == 0);
+
+    // invalid quantity falls back to 1
+    BuyLowSellHigh bad("BTC", 59000.0, 62000.0, -3);
+    m.addPrice("BTC", 50000.0);
+    CHECK(bad.generateSignal(m, p).quantity == 1);
 }
 
 void testUnknownSymbolHolds()
@@ -83,7 +112,9 @@ void testUnknownSymbolHolds()
     Portfolio p(100000.0);
     BuyLowSellHigh s("XYZ", 10.0, 20.0);
     SilenceCout quiet;
-    CHECK(s.generateSignal(m, p) == Signal::HOLD);
+    Signal sig = s.generateSignal(m, p);
+    CHECK(sig.action == Action::HOLD);
+    CHECK(sig.quantity == 0);
 }
 
 void testGetSymbol()
@@ -100,7 +131,7 @@ void testWorksThroughBasePointer()
     BuyLowSellHigh concrete("ETH", 3500.0, 4500.0);
     TradingStrategy* base = &concrete;
     SilenceCout quiet;
-    CHECK(base->generateSignal(m, p) == Signal::BUY);
+    CHECK(base->generateSignal(m, p).action == Action::BUY);
     CHECK(base->getSymbol() == "ETH");
 }
 
@@ -109,6 +140,7 @@ int main()
     testMarketDataAddAndGet();
     testMarketDataUpdatesExistingSymbol();
     testSignalsAroundThresholds();
+    testSignalQuantity();
     testUnknownSymbolHolds();
     testGetSymbol();
     testWorksThroughBasePointer();

@@ -132,7 +132,7 @@ double Portfolio::getCash() const
     return cash;
 }
 
-double Portfolio::getPortfolioValue(MarketData& market)
+double Portfolio::getPortfolioValue(const MarketData& market) const
 {
     double totalValue = cash;
 
@@ -147,7 +147,7 @@ double Portfolio::getPortfolioValue(MarketData& market)
     return totalValue;
 }
 
-void Portfolio::display(MarketData& market)
+void Portfolio::display(const MarketData& market) const
 {
     cout << "\n===== PORTFOLIO =====\n";
 

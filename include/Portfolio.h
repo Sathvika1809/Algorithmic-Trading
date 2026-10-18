@@ -35,9 +35,10 @@ class Portfolio
 
         double getCash() const;
 
-        double getPortfolioValue(MarketData& market);
+        // These only read the portfolio and the market, so they are const.
+        double getPortfolioValue(const MarketData& market) const;
 
-        void display(MarketData& market);
+        void display(const MarketData& market) const;
 };
 
 #endif

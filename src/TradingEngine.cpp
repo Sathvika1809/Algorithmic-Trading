@@ -68,24 +68,27 @@ bool TradingEngine::executeSell(
 
     return success;
 }
+
 void TradingEngine::runStrategy(TradingStrategy& strategy)
 {
     Signal signal = strategy.generateSignal(market, portfolio);
 
-    if(signal == Signal::BUY)
+    if(signal.action == Action::BUY)
     {
         cout << "Trading Engine: BUY signal received\n";
-        executeBuy(strategy.getSymbol(), 1);
+        executeBuy(strategy.getSymbol(), signal.quantity);
     }
-    else if(signal == Signal::SELL)
+    else if(signal.action == Action::SELL)
     {
         cout << "Trading Engine: SELL signal received\n";
-        executeSell(strategy.getSymbol(), 1);
-    }else
+        executeSell(strategy.getSymbol(), signal.quantity);
+    }
+    else
     {
         cout << "Trading Engine: HOLD signal received\n";
     }
 }
+
 void TradingEngine::display()
 {
     cout << "\n===== TRADING ENGINE =====\n";

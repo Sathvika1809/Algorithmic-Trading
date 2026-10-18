@@ -1,24 +1,30 @@
-#ifndef BUYLOWSLLHIGH_H
-#define BUYLOWSLLHIGH_H
+#ifndef BUYLOWSELLHIGH_H
+#define BUYLOWSELLHIGH_H
 
-#include "TradingStrategy.h"
 #include <string>
+#include "TradingStrategy.h"
+
 class BuyLowSellHigh : public TradingStrategy
 {
     private:
-        string symbol;
+        std::string symbol;
         double buyThreshold;
         double sellThreshold;
+        int quantity;   // units to trade on every signal
 
     public:
-
-        BuyLowSellHigh(const string& symbol,double buyPrice, double sellPrice);
+        // quantity is optional (default 1) so old code keeps working.
+        BuyLowSellHigh(const std::string& symbol,
+                       double buyPrice,
+                       double sellPrice,
+                       int quantity = 1);
 
         Signal generateSignal(
-            MarketData& market,
-            Portfolio& portfolio
+            const MarketData& market,
+            const Portfolio& portfolio
         ) override;
-        std::string getSymbol() override;
+
+        std::string getSymbol() const override;
 };
 
 #endif
