@@ -170,6 +170,60 @@ void testDestructorFreesRemainingNodes()
     CHECK(l.size() == 100);
 }
 
+static Order makeOrderAt(int id, double price)
+{
+    return Order(id, "BTC", price, 1, "BUY");
+}
+
+void testInsertSortedDescending()
+{
+    OrderList l;
+    l.insertSorted(makeOrderAt(1, 100.0), true);
+    l.insertSorted(makeOrderAt(2, 102.0), true);
+    l.insertSorted(makeOrderAt(3, 101.0), true);
+    l.insertSorted(makeOrderAt(4, 99.0), true);
+    CHECK(l.size() == 4);
+    CHECK(l.front()->getOrderId() == 2); // highest price first
+    CHECK(drain(l) == "2,3,1,4,");
+}
+
+void testInsertSortedAscending()
+{
+    OrderList l;
+    l.insertSorted(makeOrderAt(1, 100.0), false);
+    l.insertSorted(makeOrderAt(2, 102.0), false);
+    l.insertSorted(makeOrderAt(3, 101.0), false);
+    l.insertSorted(makeOrderAt(4, 99.0), false);
+    CHECK(l.front()->getOrderId() == 4); // lowest price first
+    CHECK(drain(l) == "4,1,3,2,");
+}
+
+void testInsertSortedKeepsArrivalOrderForEqualPrices()
+{
+    OrderList l;
+    l.insertSorted(makeOrderAt(1, 100.0), true);
+    l.insertSorted(makeOrderAt(2, 100.0), true);
+    l.insertSorted(makeOrderAt(3, 101.0), true); // better price jumps ahead
+    l.insertSorted(makeOrderAt(4, 100.0), true); // after 1 and 2
+    l.insertSorted(makeOrderAt(5, 101.0), true); // after 3, before 1
+    CHECK(drain(l) == "3,5,1,2,4,");
+}
+
+void testInsertSortedHeadAndTailStayCorrect()
+{
+    OrderList l;
+    OrderList::Node* worst = l.insertSorted(makeOrderAt(1, 90.0), true);
+    OrderList::Node* best = l.insertSorted(makeOrderAt(2, 110.0), true);
+    OrderList::Node* mid = l.insertSorted(makeOrderAt(3, 100.0), true);
+    CHECK(l.front()->getOrderId() == 2);
+    CHECK(l.removeNode(mid)); // handle from insertSorted works
+    CHECK(l.removeNode(best)); // head
+    CHECK(l.front()->getOrderId() == 1);
+    l.insert(makeOrder(9)); // plain insert still appends after the tail
+    CHECK(drain(l) == "1,9,");
+    (void)worst;
+}
+
 int main()
 {
     testEmptyList();
@@ -183,6 +237,10 @@ int main()
     testPopFront();
     testManyOrders();
     testDestructorFreesRemainingNodes();
+    testInsertSortedDescending();
+    testInsertSortedAscending();
+    testInsertSortedKeepsArrivalOrderForEqualPrices();
+    testInsertSortedHeadAndTailStayCorrect();
 
     std::cout << (g_total - g_failed) << "/" << g_total << " checks passed\n";
     if (g_failed == 0)

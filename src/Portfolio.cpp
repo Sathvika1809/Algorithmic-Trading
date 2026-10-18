@@ -1,4 +1,3 @@
-
 #include "../include/Portfolio.h"
 #include <iostream>
 
@@ -26,7 +25,7 @@ bool Portfolio::buy(const string& symbol, double price, int quantity)
     }
 
     // Check if we already own this asset
-    for(int i = 0; i < holdings.size(); i++)
+    for(size_t i = 0; i < holdings.size(); i++)
     {
         if(holdings[i].symbol == symbol)
         {
@@ -72,7 +71,7 @@ bool Portfolio::sell(const string& symbol, double price, int quantity)
     }
 
     // Find the asset
-    for(int i = 0; i < holdings.size(); i++)
+    for(size_t i = 0; i < holdings.size(); i++)
     {
         if(holdings[i].symbol == symbol)
         {
@@ -102,9 +101,9 @@ bool Portfolio::sell(const string& symbol, double price, int quantity)
     return false;
 }
 
-int Portfolio::getQuantity(const string& symbol)
+int Portfolio::getQuantity(const string& symbol) const
 {
-    for(int i = 0; i < holdings.size(); i++)
+    for(size_t i = 0; i < holdings.size(); i++)
     {
         if(holdings[i].symbol == symbol)
         {
@@ -113,6 +112,19 @@ int Portfolio::getQuantity(const string& symbol)
     }
 
     return 0;
+}
+
+double Portfolio::getAveragePrice(const string& symbol) const
+{
+    for(size_t i = 0; i < holdings.size(); i++)
+    {
+        if(holdings[i].symbol == symbol)
+        {
+            return holdings[i].averagePrice;
+        }
+    }
+
+    return 0.0;
 }
 
 double Portfolio::getCash() const
@@ -124,7 +136,7 @@ double Portfolio::getPortfolioValue(MarketData& market)
 {
     double totalValue = cash;
 
-    for(int i = 0; i < holdings.size(); i++)
+    for(size_t i = 0; i < holdings.size(); i++)
     {
         double cur = market.getPrice(holdings[i].symbol);
         if(cur != -1){
@@ -147,7 +159,7 @@ void Portfolio::display(MarketData& market)
     }
     else
     {
-        for(int i = 0; i < holdings.size(); i++)
+        for(size_t i = 0; i < holdings.size(); i++)
         {
             cout << "Symbol: "
                  << holdings[i].symbol << endl;
@@ -165,4 +177,3 @@ void Portfolio::display(MarketData& market)
     cout << "Portfolio Value: "
          << getPortfolioValue(market) << endl;
 }
-

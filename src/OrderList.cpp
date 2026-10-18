@@ -43,6 +43,57 @@ OrderList::Node* OrderList::insert(const Order& order)
     return newNode;
 }
 
+OrderList::Node* OrderList::insertSorted(const Order& order, bool descendingPrice)
+{
+    // Walk back from the tail past orders whose price is strictly worse than
+    // the new order. The new order goes right after the first order that is
+    // at least as good, so equal prices stay in arrival order.
+    Node* after = tail_;
+    while (after != nullptr)
+    {
+        double p = after->order.getPrice();
+        bool atLeastAsGood = descendingPrice ? (p >= order.getPrice())
+                                             : (p <= order.getPrice());
+        if (atLeastAsGood)
+        {
+            break;
+        }
+        after = after->prev;
+    }
+
+    Node* newNode = new Node(order);
+    if (after == nullptr)
+    {
+        // new order has the best price: it becomes the head
+        newNode->next = head_;
+        if (head_ != nullptr)
+        {
+            head_->prev = newNode;
+        }
+        else
+        {
+            tail_ = newNode;
+        }
+        head_ = newNode;
+    }
+    else
+    {
+        newNode->prev = after;
+        newNode->next = after->next;
+        if (after->next != nullptr)
+        {
+            after->next->prev = newNode;
+        }
+        else
+        {
+            tail_ = newNode;
+        }
+        after->next = newNode;
+    }
+    ++size_;
+    return newNode;
+}
+
 Order* OrderList::find(int orderId)
 {
     for (Node* cur = head_; cur != nullptr; cur = cur->next)

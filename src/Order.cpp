@@ -40,6 +40,12 @@ string Order:: getType() const
 {
     return type;
 }
+
+void Order::setQuantity(int newQuantity)
+{
+    quantity = newQuantity;
+}
+
 void Order::display() const
 {
     cout<<"Order ID: "<<orderId<<'\n';

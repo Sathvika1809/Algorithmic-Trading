@@ -15,7 +15,7 @@ BuyLowSellHigh::BuyLowSellHigh(
 
 Signal BuyLowSellHigh::generateSignal(
     MarketData& market,
-    Portfolio& portfolio)
+    Portfolio& /*portfolio*/)
 {
     double curPrice = market.getPrice(symbol);
 

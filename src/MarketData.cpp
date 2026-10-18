@@ -1,42 +1,76 @@
 #include "../include/MarketData.h"
 #include <iostream>
 using namespace std;
+
 MarketData::MarketData()
 {
-    //vector is automatically initialized as empty
+    // table and symbols start empty
 }
 
-void MarketData::addPrice(const string& symbol,double price)
+void MarketData::addPrice(const string& symbol, double price)
 {
-    for(size_t i=0;i<data.size();i++){
-        if(data[i].symbol == symbol)
-        {
-            data[i].price = price;
-            return;
-        }
-    }
-    PriceData newData;
-    newData.symbol = symbol;
-    newData.price = price;
-    data.push_back(newData);
-}
-
-double MarketData::getPrice(const string& symbol)
-{
-    for(int i=0;i<data.size();i++){
-        if(data[i].symbol == symbol)
-        {
-            return data[i].price;
-        }
-    }
-    return -1;
-}
-void MarketData::display()
-{
-    for (size_t i = 0; i < data.size(); i++)
+    SymbolData* existing = table.find(symbol);
+    if (existing != nullptr)
     {
-        cout << "Symbol: " << data[i].symbol << '\n';
-        cout << "Price: " << data[i].price << '\n';
+        existing->lastPrice = price;
+        existing->history.push_back(price);
+        return;
+    }
+
+    SymbolData fresh;
+    fresh.lastPrice = price;
+    fresh.history.push_back(price);
+    table.insert(symbol, fresh);
+    symbols.push_back(symbol);
+}
+
+double MarketData::getPrice(const string& symbol) const
+{
+    const SymbolData* data = table.find(symbol);
+    if (data == nullptr)
+    {
+        return -1;
+    }
+    return data->lastPrice;
+}
+
+bool MarketData::hasPrice(const string& symbol) const
+{
+    return table.find(symbol) != nullptr;
+}
+
+size_t MarketData::historySize(const string& symbol) const
+{
+    const SymbolData* data = table.find(symbol);
+    if (data == nullptr)
+    {
+        return 0;
+    }
+    return data->history.size();
+}
+
+double MarketData::getMovingAverage(const string& symbol, size_t window) const
+{
+    const SymbolData* data = table.find(symbol);
+    if (data == nullptr || window == 0 || data->history.size() < window)
+    {
+        return -1;
+    }
+
+    double sum = 0.0;
+    for (size_t i = data->history.size() - window; i < data->history.size(); ++i)
+    {
+        sum += data->history[i];
+    }
+    return sum / static_cast<double>(window);
+}
+
+void MarketData::display() const
+{
+    for (size_t i = 0; i < symbols.size(); i++)
+    {
+        cout << "Symbol: " << symbols[i] << '\n';
+        cout << "Price: " << getPrice(symbols[i]) << '\n';
         cout << "-----------\n";
     }
 }

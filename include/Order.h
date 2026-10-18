@@ -31,7 +31,9 @@ class Order{
         double getPrice() const;
         int getQuantity() const;
         string getSymbol() const;
-        
+
+        // Used by the order book when an order is partially filled.
+        void setQuantity(int newQuantity);
 
         void display() const;
 };

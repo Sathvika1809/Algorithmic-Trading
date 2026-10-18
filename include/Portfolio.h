@@ -1,4 +1,3 @@
-
 #ifndef PORTFOLIO_H
 #define PORTFOLIO_H
 
@@ -29,7 +28,10 @@ class Portfolio
 
         bool sell(const string& symbol, double price, int quantity);
 
-        int getQuantity(const string& symbol);
+        int getQuantity(const string& symbol) const;
+
+        // Average buy price of the current holding, or 0 if none is held.
+        double getAveragePrice(const string& symbol) const;
 
         double getCash() const;
 
@@ -39,4 +41,3 @@ class Portfolio
 };
 
 #endif
-
