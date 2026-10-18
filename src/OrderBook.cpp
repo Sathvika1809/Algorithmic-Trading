@@ -8,6 +8,11 @@ OrderBook::OrderBook()
     //  Automatically the object calls its constructor
 }
 
+OrderBook::~OrderBook()
+{
+    
+}
+
 void OrderBook::addOrder(Order order)
 {
     if(order.getType() == "BUY")

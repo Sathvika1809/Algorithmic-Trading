@@ -3,82 +3,130 @@
 
 using namespace std;
 
-OrderList::Node::Node(Order o)
+OrderList::Node::Node(const Order& o)
+    : order(o), prev(nullptr), next(nullptr)
 {
-    order = o;
-    next = nullptr;
 }
+
 OrderList::OrderList()
+    : head_(nullptr), tail_(nullptr), size_(0)
 {
-    // head is NULL the first list is empty
-    head = nullptr;
 }
-void OrderList::insert(Order order)
+
+OrderList::~OrderList()
+{
+    Node* cur = head_;
+    while (cur != nullptr)
+    {
+        Node* nextNode = cur->next;
+        delete cur;
+        cur = nextNode;
+    }
+}
+
+OrderList::Node* OrderList::insert(const Order& order)
 {
     Node* newNode = new Node(order);
-    if(head == nullptr)
+    if (tail_ == nullptr)
     {
-        head = newNode;
-        return;
+        // list was empty
+        head_ = newNode;
+        tail_ = newNode;
     }
-    Node* temp = head;
-
-    while(temp->next != nullptr){
-        temp = temp->next;
+    else
+    {
+        newNode->prev = tail_;
+        tail_->next = newNode;
+        tail_ = newNode;
     }
-    temp->next = newNode;
+    ++size_;
+    return newNode;
 }
+
 Order* OrderList::find(int orderId)
 {
-    Node* temp = head;
-    while(temp != nullptr)
+    for (Node* cur = head_; cur != nullptr; cur = cur->next)
     {
-        if(temp->order.getOrderId() == orderId)
+        if (cur->order.getOrderId() == orderId)
         {
-            return &(temp->order);
+            return &(cur->order);
         }
-        temp = temp->next;
+    }
+    return nullptr;
+}
+
+bool OrderList::removeNode(Node* node)
+{
+    if (node == nullptr)
+    {
+        return false;
     }
 
-    return nullptr;
+    // Reconnect the neighbours around the node.
+    if (node->prev != nullptr)
+    {
+        node->prev->next = node->next;
+    }
+    else
+    {
+        head_ = node->next; // node was the head
+    }
+
+    if (node->next != nullptr)
+    {
+        node->next->prev = node->prev;
+    }
+    else
+    {
+        tail_ = node->prev; // node was the tail
+    }
+
+    delete node;
+    --size_;
+    return true;
 }
 
 bool OrderList::remove(int orderId)
 {
-    if(head == nullptr)
+    for (Node* cur = head_; cur != nullptr; cur = cur->next)
     {
-        return false;
-    }
-    //If the first node has the required order
-    if(head->order.getOrderId() == orderId)
-    {
-        Node* temp = head;
-        head = head->next;
-
-        delete temp;
-        return true;
-    }
-    Node* temp = head;
-    while(temp->next != nullptr)
-    {
-        if(temp->next->order.getOrderId() == orderId)
+        if (cur->order.getOrderId() == orderId)
         {
-            Node* nodeToDelete = temp->next;
-            temp->next = temp->next->next;
-            delete nodeToDelete;
-
-            return true;
+            return removeNode(cur);
         }
-        temp = temp->next;
     }
     return false;
 }
-void OrderList::display()
+
+Order* OrderList::front()
 {
-    Node* temp = head;
-    while(temp != nullptr){
-        temp->order.display();
-        cout<<"-----------"<<endl;
-        temp = temp->next;
+    return (head_ != nullptr) ? &(head_->order) : nullptr;
+}
+
+bool OrderList::popFront()
+{
+    if (head_ == nullptr)
+    {
+        return false;
+    }
+    return removeNode(head_);
+}
+
+size_t OrderList::size() const
+{
+    return size_;
+}
+
+bool OrderList::empty() const
+{
+    return size_ == 0;
+}
+
+void OrderList::display() const
+{
+    for (const Node* cur = head_; cur != nullptr; cur = cur->next)
+    {
+        cur->order.display();
+        cout << "-----------" << endl;
     }
 }

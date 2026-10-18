@@ -8,6 +8,13 @@ MarketData::MarketData()
 
 void MarketData::addPrice(const string& symbol,double price)
 {
+    for(size_t i=0;i<data.size();i++){
+        if(data[i].symbol == symbol)
+        {
+            data[i].price = price;
+            return;
+        }
+    }
     PriceData newData;
     newData.symbol = symbol;
     newData.price = price;
@@ -26,7 +33,7 @@ double MarketData::getPrice(const string& symbol)
 }
 void MarketData::display()
 {
-    for (int i = 0; i < data.size(); i++)
+    for (size_t i = 0; i < data.size(); i++)
     {
         cout << "Symbol: " << data[i].symbol << '\n';
         cout << "Price: " << data[i].price << '\n';
