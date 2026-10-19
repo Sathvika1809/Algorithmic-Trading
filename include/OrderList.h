@@ -1,7 +1,9 @@
 // Doubly linked list of orders, oldest order at the front.
 //
 //  - insert at tail            : O(1)   (tail pointer, no walking the list)
-//  - insertSorted              : O(n)   (walks back from the tail to find the spot)
+//  - insertSorted              : O(min(d, n-d)) where d is the distance from the best-priced end:
+//                                searches from BOTH ends at once, so an order near the best
+//                                price (the common case) or at the worst price is found fast
 //  - removeNode(handle)        : O(1)   (prev/next pointers, no searching)
 //  - remove(orderId), find(id) : O(n)   (must search for the order first)
 //  - front / popFront          : O(1)   (oldest order = first in line)
@@ -46,6 +48,8 @@ class OrderList
         // highest price first if descendingPrice is true (buy side), otherwise
         // lowest price first (sell side). Orders with the same price keep their
         // arrival order (price-time priority). Returns a handle like insert().
+        // Searches from the head and the tail at the same time, so it stops as
+        // soon as the nearer end finds the spot.
         Node* insertSorted(const Order& order, bool descendingPrice);
 
         // Returns a pointer to the order with this id, or nullptr.

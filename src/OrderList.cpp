@@ -45,20 +45,58 @@ OrderList::Node* OrderList::insert(const Order& order)
 
 OrderList::Node* OrderList::insertSorted(const Order& order, bool descendingPrice)
 {
-    // Walk back from the tail past orders whose price is strictly worse than
-    // the new order. The new order goes right after the first order that is
-    // at least as good, so equal prices stay in arrival order.
-    Node* after = tail_;
-    while (after != nullptr)
+    // The list is sorted, best price first. "At least as good" nodes (better
+    // or equal price than the new order) form a prefix of the list, and the
+    // new order goes right after the last of them. That keeps equal prices in
+    // arrival order (price-time priority).
+    //
+    // We look for the end of that prefix from both sides at once:
+    //   - from the tail, going backwards: the first node that is at least as
+    //     good IS the end of the prefix;
+    //   - from the head, going forwards: the first node that is strictly
+    //     worse marks the start of the rest, so its predecessor is the end.
+    // Whichever side finishes first decides. A new order with the worst price
+    // finishes at once from the tail, and one near the best price (the common
+    // case) finishes quickly from the head.
+    const double newPrice = order.getPrice();
+
+    Node* back = tail_;
+    Node* front = head_;
+    Node* after = nullptr; // the node the new order goes after (nullptr = first)
+
+    for (;;)
     {
-        double p = after->order.getPrice();
-        bool atLeastAsGood = descendingPrice ? (p >= order.getPrice())
-                                             : (p <= order.getPrice());
-        if (atLeastAsGood)
+        // tail side
+        if (back == nullptr)
         {
+            after = nullptr; // every node is strictly worse: new order goes first
             break;
         }
-        after = after->prev;
+        double backPrice = back->order.getPrice();
+        bool backAtLeastAsGood = descendingPrice ? (backPrice >= newPrice)
+                                                 : (backPrice <= newPrice);
+        if (backAtLeastAsGood)
+        {
+            after = back;
+            break;
+        }
+        back = back->prev;
+
+        // head side
+        if (front == nullptr)
+        {
+            after = tail_; // walked past the end: every node is at least as good
+            break;
+        }
+        double frontPrice = front->order.getPrice();
+        bool frontAtLeastAsGood = descendingPrice ? (frontPrice >= newPrice)
+                                                  : (frontPrice <= newPrice);
+        if (!frontAtLeastAsGood)
+        {
+            after = front->prev; // first strictly worse node: go right before it
+            break;
+        }
+        front = front->next;
     }
 
     Node* newNode = new Node(order);

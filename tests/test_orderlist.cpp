@@ -1,6 +1,9 @@
 #include "../include/OrderList.h"
+#include <algorithm>
 #include <iostream>
+#include <random>
 #include <string>
+#include <vector>
 
 static int g_total = 0;
 static int g_failed = 0;
@@ -224,6 +227,112 @@ void testInsertSortedHeadAndTailStayCorrect()
     (void)worst;
 }
 
+// Reference answer for insertSorted: sort by price (best first), and keep
+// arrival order for equal prices. Compared against the real list on random
+// data, which exercises the search from both ends.
+static std::string expectedOrder(const std::vector<std::pair<int, double> >& arrivals,
+                                 bool descending)
+{
+    std::vector<std::pair<int, double> > v = arrivals; // (id, price) in arrival order
+    std::stable_sort(v.begin(), v.end(),
+        [descending](const std::pair<int, double>& a, const std::pair<int, double>& b)
+        {
+            return descending ? (a.second > b.second) : (a.second < b.second);
+        });
+    std::string result;
+    for (size_t i = 0; i < v.size(); ++i)
+    {
+        result += std::to_string(v[i].first) + ",";
+    }
+    return result;
+}
+
+static void checkRandomSortedInsert(bool descending, int priceLevels, unsigned seed)
+{
+    std::mt19937 rng(seed);
+    OrderList l;
+    std::vector<std::pair<int, double> > arrivals;
+    for (int i = 1; i <= 1500; ++i)
+    {
+        double price = 100.0 + static_cast<double>(rng() % static_cast<unsigned>(priceLevels));
+        arrivals.push_back(std::make_pair(i, price));
+        l.insertSorted(makeOrderAt(i, price), descending);
+    }
+    CHECK(l.size() == arrivals.size());
+    CHECK(drain(l) == expectedOrder(arrivals, descending));
+}
+
+void testInsertSortedMatchesReferenceOnRandomData()
+{
+    // few price levels = many equal prices (tests time priority hard);
+    // many levels = mostly distinct prices
+    checkRandomSortedInsert(true, 5, 1);
+    checkRandomSortedInsert(false, 5, 2);
+    checkRandomSortedInsert(true, 400, 3);
+    checkRandomSortedInsert(false, 400, 4);
+    checkRandomSortedInsert(true, 1, 5); // all prices equal: pure arrival order
+    checkRandomSortedInsert(false, 1, 6);
+}
+
+void testInsertSortedWorstPriceAppendsAtTail()
+{
+    // each new order is worse than everything before it
+    OrderList l;
+    for (int i = 1; i <= 200; ++i)
+    {
+        l.insertSorted(makeOrderAt(i, 1000.0 - i), true);
+    }
+    CHECK(l.size() == 200);
+    CHECK(l.front()->getOrderId() == 1);
+    // and each new order is better than everything before it
+    OrderList m;
+    for (int i = 1; i <= 200; ++i)
+    {
+        m.insertSorted(makeOrderAt(i, 1000.0 + i), true);
+    }
+    CHECK(m.front()->getOrderId() == 200);
+}
+
+void testInsertSortedHandlesStayValidAfterManyInserts()
+{
+    std::mt19937 rng(9);
+    OrderList l;
+    std::vector<OrderList::Node*> handles;
+    for (int i = 1; i <= 500; ++i)
+    {
+        double price = 100.0 + static_cast<double>(rng() % 20u);
+        handles.push_back(l.insertSorted(makeOrderAt(i, price), false));
+    }
+    bool allOk = true;
+    for (size_t i = 0; i < handles.size(); ++i)
+    {
+        if (handles[i]->order.getOrderId() != static_cast<int>(i) + 1)
+        {
+            allOk = false;
+        }
+    }
+    CHECK(allOk);
+    // remove every second order through its handle; the rest stay sorted
+    for (size_t i = 0; i < handles.size(); i += 2)
+    {
+        CHECK(l.removeNode(handles[i]));
+    }
+    CHECK(l.size() == 250);
+    double last = -1.0;
+    bool sorted = true;
+    while (!l.empty())
+    {
+        double p = l.front()->getPrice();
+        if (p < last)
+        {
+            sorted = false;
+        }
+        last = p;
+        l.popFront();
+    }
+    CHECK(sorted);
+}
+
 int main()
 {
     testEmptyList();
@@ -241,6 +350,9 @@ int main()
     testInsertSortedAscending();
     testInsertSortedKeepsArrivalOrderForEqualPrices();
     testInsertSortedHeadAndTailStayCorrect();
+    testInsertSortedMatchesReferenceOnRandomData();
+    testInsertSortedWorstPriceAppendsAtTail();
+    testInsertSortedHandlesStayValidAfterManyInserts();
 
     std::cout << (g_total - g_failed) << "/" << g_total << " checks passed\n";
     if (g_failed == 0)
