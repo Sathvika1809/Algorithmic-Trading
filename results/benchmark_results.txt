@@ -1,0 +1,94 @@
+Trading system benchmark (quick mode)
+Numbers depend on your computer. Close other programs for steady results.
+
+==================================================
+1. HASH MAP: our CustomUnorderedMap vs std::unordered_map
+==================================================
+100000 integer keys, best of 3 runs. Speedup above 1.00x means OUR
+map is faster; below 1.00x means the standard library is faster.
+Two key patterns, because the result depends on the keys.
+
+A) sequential ids, shuffled (best case for our hash):
+operation         ours ns/op     std ns/op      speedup
+insert                  92.1         113.1        1.23x
+find (hit)               4.3           7.6        1.79x
+find (miss)              2.8          11.5        4.09x
+remove                  35.4          51.2        1.45x
+
+B) random keys (a fairer, harder test):
+operation         ours ns/op     std ns/op      speedup
+insert                 126.2         158.4        1.25x
+find (hit)               9.2          18.3        1.99x
+find (miss)             12.9          23.7        1.84x
+remove                  57.3          89.4        1.56x
+
+Memory note: our map keeps load factor <= 0.75 (more buckets), which
+helps speed but costs memory.
+
+==================================================
+2. CANCELLING ORDERS: list scan vs order book (hash map + handle)
+==================================================
+Cancel every resting order, in random order. Time per cancel.
+Scanning gets slower as the book grows; the order book does not.
+
+    orders      list scan ns     order book ns      speedup
+       500             556.0              95.8         5.8x
+      2000            3650.4              93.8        38.9x
+      5000            9435.3              86.2       109.4x
+
+==================================================
+3. ORDER BOOK: matching engine speed
+==================================================
+20000 new orders per row (buy/sell limit orders near a drifting
+mid price, quantity 1-10), each cancelled after the given number of
+steps if it has not traded. Trade log off. The deeper the book, the
+more orders rest in it.
+
+  lifetime  max depth    ops/second       ns/op    trades   traded%
+       100         72       9727437         103     10771      60.1
+      1000        509       6962669         144     13540      74.6
+     10000       2997       1483137         674     14443      79.8
+
+(an operation is one new order or one cancel; max depth = most
+orders resting in the book at any moment)
+
+Latency of adding ONE order (20000 orders, lifetime 1000).
+Includes roughly 20-100 ns of timer overhead per measurement.
+
+  median (p50) :       300 ns
+  p90          :       500 ns
+  p99          :      1000 ns
+  p99.9        :      3800 ns
+  worst (max)  :    211300 ns
+(the worst case is often the operating system pausing the program,
+not the matching code)
+
+==================================================
+4. STRATEGY SIMULATIONS on generated (synthetic) prices
+==================================================
+2000 price ticks per scenario, 1,000,000 starting cash, fixed seed.
+These prices are made up by a random generator. They test that the
+machinery works end to end. They are NOT evidence of real profits.
+
+Buy-low / sell-high (buy <= 59,500, sell >= 60,500, 0.05% fee, 1 unit)
+scenario                   buys  sells   held   win %  return % max drawdown%
+mean-reverting prices       156    148      8   100.0      23.2           2.9
+random-walk prices           41     41      0   100.0       5.9           5.9
+slow downtrend               18     18      0   100.0       3.3           7.3
+
+(win % counts only closed trades: it ignores units still held, which
+is why the downtrend can show 100% wins and still lose money.)
+The strategy assumes prices come back to normal. The first row looks
+great only because those prices were generated to come back. With
+no such pull, or in a downtrend, the strategy has no edge and the
+drawdown shows the risk of buying a falling price.
+
+Arbitrage between two venues (0.1% fee per fill, 1 unit per trade)
+  ticks                  : 2000
+  opportunities found    : 310
+  trades executed        : 310
+  profit after fees      : 11252.00
+  profit the strategy expected: 11252.00
+  units left over        : 0
+
+(checksum 644472145787347: proves the work above really ran)
